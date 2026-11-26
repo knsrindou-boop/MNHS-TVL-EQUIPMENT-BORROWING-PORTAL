@@ -1,0 +1,999 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MNHS TVL Equipment Borrowing Portal</title>
+
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial,sans-serif;background:#edf5ef;color:#20352a}
+header{background:#124b34;color:white;text-align:center;padding:22px 12px}
+header h1{margin:0 0 6px}
+main{width:min(1000px,94%);margin:22px auto}
+.panel{background:white;border:1px solid #d7e5da;border-radius:14px;padding:20px;margin:14px 0;box-shadow:0 4px 14px #1234}
+h2{color:#124b34;margin-top:0}
+label{display:block;font-weight:bold;margin:12px 0 6px}
+input,select,textarea{width:100%;padding:11px;border:1px solid #b9cbbf;border-radius:8px;font:inherit}
+textarea{min-height:75px}
+button{border:0;border-radius:8px;padding:11px 15px;margin:5px 5px 5px 0;background:#176b45;color:white;font-weight:bold;cursor:pointer}
+button:hover{opacity:.85}
+button.secondary{background:#e6f0e9;color:#124b34}
+button.danger{background:#b42318}
+.hidden{display:none!important}
+.error{color:#b42318;font-weight:bold;min-height:20px}
+.notice{background:#eaf5ee;padding:10px;border-radius:8px}
+.item{border:1px solid #d7e5da;border-radius:10px;padding:13px;margin:10px 0}
+.item p{white-space:pre-line;line-height:1.5}
+.status{display:inline-block;padding:5px 10px;border-radius:20px;background:#eee;font-size:12px;font-weight:bold}
+.pending{background:#fff0c2;color:#805b00}
+.approved{background:#dcf5e4;color:#176b45}
+.rejected{background:#fde5e4;color:#a12620}
+.returned{background:#e4edff;color:#294f9b}
+.borrowed{background:#e8ddff;color:#59359a}
+.overdue{background:#fde5e4;color:#a12620}
+.notification{border-left:5px solid #176b45;background:#f3f8f4;padding:10px;border-radius:8px;margin:8px 0}
+.notification.warning{border-color:#d18a00}
+.notification.danger{border-color:#b42318}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px}
+.stat{background:#eaf5ee;padding:14px;border-radius:10px}
+.stat strong{display:block;font-size:24px;color:#124b34}
+nav{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:15px}
+footer{background:#124b34;color:#fff;text-align:center;padding:28px 16px;margin-top:28px;font-size:14px;line-height:1.6}
+footer .school-name{font-size:20px;font-weight:700;margin:0 0 5px}
+footer .school-address{margin:0 0 14px;color:#e2eee6}
+footer .research-title{max-width:850px;margin:14px auto;font-weight:600}
+footer .research-label{color:#d6c477;font-weight:700;letter-spacing:1px;margin:14px 0 5px}
+footer .researchers{color:#d6c477;font-weight:600;margin:0}
+footer .researchers span{display:inline-block;margin:2px 7px}
+</style>
+</head>
+
+<body>
+
+<header>
+<h1>MNHS TVL Equipment Borrowing Portal</h1>
+<p>Minuyan National High School</p>
+</header>
+
+<main>
+
+<!-- HOME -->
+<section id="home" class="panel">
+<h2>Welcome</h2>
+<p>Select account type.</p>
+
+<button onclick="showPage('studentLogin')">Student Sign In</button>
+<button class="secondary" onclick="showPage('adminLogin')">Admin Sign In</button>
+
+<div class="notice" style="margin-top:16px">
+<b>Roles and Responsibilities:</b><br>
+<b>Website Administrator:</b> Manages the website and monitors borrowing requests, approvals, inventory, and records.<br>
+<b>Teacher / Equipment Custodian:</b> Takes care of the actual school equipment, releases approved equipment, and receives returned equipment.<br>
+<b>Student:</b> Submits borrowing requests, collects equipment after approval, and returns equipment on the expected return date.
+</div>
+</section>
+
+<!-- STUDENT LOGIN -->
+<section id="studentLogin" class="panel hidden">
+<h2>Student Sign In</h2>
+
+<label>Full Name</label>
+<input id="studentName" placeholder="Enter your full name">
+
+<label>Password</label>
+<input id="studentPassword" type="password" placeholder="Student password">
+
+<p id="studentLoginError" class="error"></p>
+
+<button onclick="studentLogin()">Sign In</button>
+<button class="secondary" onclick="showPage('home')">Back</button>
+</section>
+
+<!-- ADMIN LOGIN -->
+<section id="adminLogin" class="panel hidden">
+<h2>Admin Sign In</h2>
+
+<label>Username</label>
+<input id="adminUser" placeholder="Admin username">
+
+<label>Password</label>
+<input id="adminPass" type="password" placeholder="Admin password">
+
+<p id="adminLoginError" class="error"></p>
+
+<button onclick="adminLogin()">Sign In</button>
+<button class="secondary" onclick="showPage('home')">Back</button>
+</section>
+
+<!-- STUDENT DASHBOARD -->
+<section id="studentDashboard" class="hidden">
+
+<div class="panel">
+<h2>Student Dashboard</h2>
+<p>Welcome, <b id="studentWelcome"></b>!</p>
+<button class="secondary" onclick="studentLogout()">Log Out</button>
+</div>
+
+<div class="panel">
+<h2>Borrow Equipment</h2>
+
+<label>Equipment</label>
+<select id="equipmentSelect"></select>
+
+<label>Section</label>
+<select id="studentSection">
+<option value="">Select your section</option>
+<option value="Demeter">Demeter</option>
+<option value="Venus">Venus</option>
+</select>
+
+<label>Purpose</label>
+<textarea id="borrowPurpose"></textarea>
+
+<label>Expected Return Date</label>
+<input id="returnDate" type="date">
+
+<label>Expected Return Time</label>
+<input id="returnTime" type="time">
+
+<button onclick="submitRequest()">Submit Request</button>
+
+<hr>
+
+<h3>Request an item not listed</h3>
+
+<label>Equipment Name</label>
+<input id="otherEquipment">
+
+<label>Purpose</label>
+<textarea id="otherPurpose"></textarea>
+
+<label>Expected Return Date</label>
+<input id="otherDate" type="date">
+
+<label>Expected Return Time</label>
+<input id="otherTime" type="time">
+
+<button onclick="submitOtherRequest()">Submit Other Item</button>
+
+<p id="studentMessage" class="notice hidden"></p>
+</div>
+
+<div class="panel">
+<h2>My Borrowing Records</h2>
+<div id="myRecords"></div>
+</div>
+
+</section>
+
+<!-- ADMIN DASHBOARD -->
+<section id="adminDashboard" class="hidden">
+
+<div class="panel">
+<h2>Admin Dashboard</h2>
+
+<p class="notice">
+<b>Roles and Responsibilities:</b>
+The administrator manages the website and records. The teacher/equipment custodian releases and receives the actual equipment.
+</p>
+
+<button class="secondary" onclick="adminLogout()">Log Out</button>
+
+<div class="grid">
+<div class="stat"><strong id="pendingCount">0</strong>Pending</div>
+<div class="stat"><strong id="approvedCount">0</strong>Approved / For Pickup</div>
+<div class="stat"><strong id="borrowedCount">0</strong>Currently Borrowed</div>
+<div class="stat"><strong id="equipmentCount">0</strong>Equipment</div>
+<div class="stat"><strong id="recordCount">0</strong>Total Requests</div>
+</div>
+</div>
+
+<div class="panel">
+<h2>Admin Notifications</h2>
+
+<span id="notificationCount" class="status pending">0</span>
+
+<button class="secondary" onclick="enableAdminNotifications()">Enable Browser Notifications</button>
+
+<p>Browser notifications work on this device/browser only.</p>
+
+<div id="notificationList"></div>
+</div>
+
+<div class="panel">
+
+<nav>
+<button onclick="showAdminTab('requestsTab')">Requests</button>
+<button class="secondary" onclick="showAdminTab('inventoryTab')">Inventory</button>
+<button class="secondary" onclick="showAdminTab('recordsTab')">All Records</button>
+</nav>
+
+<div id="requestsTab">
+<h2>Borrowing Requests</h2>
+<div id="requestList"></div>
+</div>
+
+<div id="inventoryTab" class="hidden">
+<h2>Equipment Inventory</h2>
+
+<div class="grid">
+<input id="newEquipment" placeholder="Equipment name">
+<input id="newQuantity" type="number" min="1" value="1">
+</div>
+
+<button onclick="addEquipment()">Add Equipment</button>
+<div id="inventoryList"></div>
+</div>
+
+<div id="recordsTab" class="hidden">
+<h2>All Records</h2>
+
+<button class="secondary" onclick="exportCSV()">Download CSV</button>
+<button class="danger" onclick="deleteAllRecords()">Delete All Records</button>
+
+<div id="allRecords"></div>
+</div>
+
+</div>
+</section>
+
+</main>
+
+<footer>
+<p class="school-name">MINUYAN NATIONAL HIGH SCHOOL</p>
+<p class="school-address">Curvada, Barangay Minuyan, Norzagaray, Bulacan</p>
+
+<hr style="max-width:850px;border:0;border-top:1px solid #557866;margin:14px auto">
+
+<p class="research-title">
+The Role of a Website for Borrowing and Tracking School Equipment for TVL at Minuyan National High School
+</p>
+
+<p class="research-label">RESEARCHERS</p>
+
+<p class="researchers">
+<span>Desiree Margallo</span> ·
+<span>Cyrus James Agarpao</span> ·
+<span>Prince Reiver Dacoseo</span>
+</p>
+</footer>
+
+<script>
+"use strict";
+
+const KEY = "mnhs_portal_data_v2";
+
+const DEFAULT_ITEMS = [
+["Chef Knife",10],["Chopping Board",10],["Mixing Bowl",10],
+["Measuring Cup",10],["Measuring Spoon",10],["Frying Pan",5],
+["Cooking Pot",5],["Spatula",10],["Ladle",10],["Whisk",8],
+["Tongs",8],["Plate",20],["Glass",20],["Oven Tray",5],
+["Rolling Pin",5],["Peeler",8],["Grater",5]
+];
+
+let data = loadData();
+let currentStudent = "";
+let knownPendingIds = new Set();
+let adminNotificationsEnabled = false;
+
+function el(id){
+return document.getElementById(id);
+}
+
+function makeId(prefix){
+return prefix + Date.now() + Math.random().toString(36).slice(2,8);
+}
+
+function loadData(){
+try{
+const saved = JSON.parse(localStorage.getItem(KEY));
+
+if(saved && Array.isArray(saved.equipment) && Array.isArray(saved.records)){
+return saved;
+}
+}catch(error){
+console.error(error);
+}
+
+return {
+equipment:DEFAULT_ITEMS.map((item,index)=>({
+id:"eq"+index,name:item[0],quantity:item[1]
+})),
+records:[]
+};
+}
+
+function save(){
+try{
+localStorage.setItem(KEY,JSON.stringify(data));
+return true;
+}catch(error){
+alert("Unable to save data. Check browser storage.");
+return false;
+}
+}
+
+function reservedQuantity(name){
+return data.records.filter(r=>
+r.item.toLowerCase()===name.toLowerCase() &&
+r.status==="Approved"
+).length;
+}
+
+function availableQuantity(item){
+return Math.max(0,item.quantity-reservedQuantity(item.name));
+}
+
+function showPage(id){
+["home","studentLogin","adminLogin","studentDashboard","adminDashboard"]
+.forEach(page=>{
+el(page).classList.toggle("hidden",page!==id);
+});
+
+el("studentLoginError").textContent="";
+el("adminLoginError").textContent="";
+}
+
+function showAdminTab(id){
+["requestsTab","inventoryTab","recordsTab"].forEach(tab=>{
+el(tab).classList.toggle("hidden",tab!==id);
+});
+
+if(id==="requestsTab")renderRequests();
+if(id==="inventoryTab")renderInventory();
+if(id==="recordsTab")renderAllRecords();
+}
+
+function studentLogin(){
+const name=el("studentName").value.trim();
+const password=el("studentPassword").value;
+
+if(!name||!password){
+el("studentLoginError").textContent="Please enter your name and password.";
+return;
+}
+
+if(password!=="123"){
+el("studentLoginError").textContent="Incorrect student password.";
+return;
+}
+
+currentStudent=name;
+el("studentWelcome").textContent=name;
+el("studentPassword").value="";
+
+populateEquipment();
+renderMyRecords();
+el("studentMessage").classList.add("hidden");
+
+showPage("studentDashboard");
+}
+
+function studentLogout(){
+currentStudent="";
+el("studentName").value="";
+el("studentPassword").value="";
+showPage("home");
+}
+
+function adminLogin(){
+if(el("adminUser").value.trim()==="admin" &&
+el("adminPass").value==="admin123"){
+
+el("adminPass").value="";
+
+knownPendingIds=new Set(
+data.records.filter(r=>r.status==="Pending").map(r=>r.id)
+);
+
+showPage("adminDashboard");
+renderAdmin();
+
+}else{
+el("adminLoginError").textContent="Incorrect admin username or password.";
+}
+}
+
+function adminLogout(){
+el("adminUser").value="";
+el("adminPass").value="";
+showPage("home");
+}
+
+function populateEquipment(){
+const select=el("equipmentSelect");
+select.innerHTML="";
+
+const available=data.equipment.filter(x=>availableQuantity(x)>0);
+
+if(!available.length){
+select.add(new Option("No equipment available",""));
+return;
+}
+
+select.add(new Option("Select equipment",""));
+
+available.forEach(item=>{
+select.add(new Option(
+item.name+" ("+availableQuantity(item)+" available)",
+item.id
+));
+});
+}
+
+function message(text){
+el("studentMessage").textContent=text;
+el("studentMessage").classList.remove("hidden");
+}
+
+function sendRequest(name,purpose,date,time,custom){
+const section=el("studentSection").value;
+
+if(!name||!purpose||!date||!time||!section){
+message("Please complete all required fields.");
+return false;
+}
+
+const due=new Date(date+"T"+time);
+
+if(isNaN(due.getTime())||due<=new Date()){
+message("Please select a future return date and time.");
+return false;
+}
+
+const record={
+id:makeId("r"),
+student:currentStudent,
+section,
+item:name,
+purpose,
+date,
+time,
+status:"Pending",
+custom,
+createdAt:new Date().toISOString()
+};
+
+data.records.push(record);
+
+if(!save()){
+data.records.pop();
+return false;
+}
+
+renderMyRecords();
+message("Request submitted successfully. Please wait for approval.");
+return true;
+}
+
+function submitRequest(){
+const item=data.equipment.find(x=>x.id===el("equipmentSelect").value);
+
+if(!item||availableQuantity(item)<1){
+message("This equipment is unavailable.");
+populateEquipment();
+return;
+}
+
+if(sendRequest(
+item.name,
+el("borrowPurpose").value.trim(),
+el("returnDate").value,
+el("returnTime").value,
+false
+)){
+el("borrowPurpose").value="";
+el("returnDate").value="";
+el("returnTime").value="";
+populateEquipment();
+}
+}
+
+function submitOtherRequest(){
+const name=el("otherEquipment").value.trim();
+
+if(!name){
+message("Please enter equipment name.");
+return;
+}
+
+if(sendRequest(
+name,
+el("otherPurpose").value.trim(),
+el("otherDate").value,
+el("otherTime").value,
+true
+)){
+el("otherEquipment").value="";
+el("otherPurpose").value="";
+el("otherDate").value="";
+el("otherTime").value="";
+}
+}
+
+function statusClass(r){
+if(r.status==="Borrowed" &&
+new Date(r.date+"T"+(r.time||"23:59"))<new Date()){
+return "status overdue";
+}
+return "status "+r.status.toLowerCase();
+}
+
+function createStatus(r){
+const span=document.createElement("span");
+span.className=statusClass(r);
+span.textContent=statusClass(r).includes("overdue")?"Overdue":r.status;
+return span;
+}
+
+function renderMyRecords(){
+const box=el("myRecords");
+box.innerHTML="";
+
+const rows=data.records.filter(r=>r.student===currentStudent).slice().reverse();
+
+if(!rows.length){
+box.textContent="No borrowing records yet.";
+return;
+}
+
+rows.forEach(r=>{
+const card=document.createElement("div");
+card.className="item";
+
+const heading=document.createElement("h3");
+heading.textContent=r.item;
+
+const details=document.createElement("p");
+details.textContent=
+"Section: "+r.section+
+"\nPurpose: "+r.purpose+
+"\nExpected Return: "+r.date+" at "+r.time;
+
+card.append(heading,details,createStatus(r));
+box.append(card);
+});
+}
+
+function renderAdmin(){
+renderRequests();
+renderInventory();
+renderAllRecords();
+renderNotifications();
+
+el("pendingCount").textContent=data.records.filter(r=>r.status==="Pending").length;
+el("approvedCount").textContent=data.records.filter(r=>r.status==="Approved").length;
+el("borrowedCount").textContent=data.records.filter(r=>r.status==="Borrowed").length;
+el("equipmentCount").textContent=data.equipment.length;
+el("recordCount").textContent=data.records.length;
+
+notifyNewPendingRequests();
+}
+
+function renderRequests(){
+const box=el("requestList");
+box.innerHTML="";
+
+const rows=data.records.filter(r=>r.status==="Pending").slice().reverse();
+
+if(!rows.length){
+box.textContent="No pending requests.";
+return;
+}
+
+rows.forEach(r=>{
+const card=document.createElement("div");
+card.className="item";
+
+const heading=document.createElement("h3");
+heading.textContent=r.item;
+
+const details=document.createElement("p");
+details.textContent=
+"Student: "+r.student+
+"\nSection: "+r.section+
+"\nPurpose: "+r.purpose+
+"\nExpected Return: "+r.date+" at "+r.time+
+(r.custom?"\nOther equipment request":"");
+
+const approve=document.createElement("button");
+approve.textContent="Approve";
+approve.onclick=()=>updateStatus(r.id,"Approved");
+
+const reject=document.createElement("button");
+reject.textContent="Reject";
+reject.className="danger";
+reject.onclick=()=>updateStatus(r.id,"Rejected");
+
+card.append(heading,details,approve,reject);
+box.append(card);
+});
+}
+
+function updateStatus(id,status){
+const r=data.records.find(x=>x.id===id);
+if(!r||r.status!=="Pending")return;
+
+if(status==="Approved"){
+let item=data.equipment.find(x=>x.name.toLowerCase()===r.item.toLowerCase());
+
+if(!item&&r.custom){
+item={id:makeId("eq"),name:r.item,quantity:1};
+data.equipment.push(item);
+}
+
+if(!item||availableQuantity(item)<1){
+alert("Not enough available equipment.");
+return;
+}
+}
+
+r.status=status;
+
+if(!save()){
+r.status="Pending";
+return;
+}
+
+renderAdmin();
+populateEquipment();
+
+if(currentStudent)renderMyRecords();
+
+alert("Request successfully "+status.toLowerCase()+".");
+}
+
+function renderInventory(){
+const box=el("inventoryList");
+box.innerHTML="";
+
+if(!data.equipment.length){
+box.textContent="No equipment available.";
+return;
+}
+
+data.equipment.forEach(item=>{
+const card=document.createElement("div");
+card.className="item";
+
+const heading=document.createElement("b");
+heading.textContent=item.name;
+
+const details=document.createElement("p");
+details.textContent=
+"Total Quantity: "+item.quantity+
+"\nAvailable for New Requests: "+availableQuantity(item);
+
+const remove=document.createElement("button");
+remove.textContent="Remove";
+remove.className="danger";
+
+remove.onclick=()=>{
+const active=data.records.some(r=>
+r.item.toLowerCase()===item.name.toLowerCase() &&
+["Pending","Approved","Borrowed"].includes(r.status)
+);
+
+if(active){
+alert("Cannot remove equipment with active requests.");
+return;
+}
+
+if(!confirm("Remove "+item.name+"?"))return;
+
+const old=data.equipment;
+data.equipment=data.equipment.filter(x=>x.id!==item.id);
+
+if(!save()){
+data.equipment=old;
+return;
+}
+
+renderAdmin();
+populateEquipment();
+};
+
+card.append(heading,details,remove);
+box.append(card);
+});
+}
+
+function addEquipment(){
+const name=el("newEquipment").value.trim();
+const quantity=Number(el("newQuantity").value);
+
+if(!name||!Number.isInteger(quantity)||quantity<1){
+alert("Enter a valid equipment name and quantity.");
+return;
+}
+
+const existing=data.equipment.find(x=>x.name.toLowerCase()===name.toLowerCase());
+const oldQuantity=existing?existing.quantity:null;
+
+if(existing){
+existing.quantity+=quantity;
+}else{
+data.equipment.push({id:makeId("eq"),name,quantity});
+}
+
+if(!save()){
+if(existing)existing.quantity=oldQuantity;
+else data.equipment.pop();
+return;
+}
+
+el("newEquipment").value="";
+el("newQuantity").value="1";
+
+renderAdmin();
+populateEquipment();
+alert("Equipment successfully added!");
+}
+
+function renderAllRecords(){
+const box=el("allRecords");
+box.innerHTML="";
+
+if(!data.records.length){
+box.textContent="No borrowing records yet.";
+return;
+}
+
+data.records.slice().reverse().forEach(r=>{
+const card=document.createElement("div");
+card.className="item";
+
+const heading=document.createElement("h3");
+heading.textContent=r.item;
+
+const details=document.createElement("p");
+details.textContent=
+"Student: "+r.student+
+"\nSection: "+r.section+
+"\nPurpose: "+r.purpose+
+"\nExpected Return: "+r.date+" at "+r.time;
+
+card.append(heading,details,createStatus(r));
+
+if(r.status==="Approved"){
+const button=document.createElement("button");
+button.textContent="Mark as Borrowed / Released";
+button.onclick=()=>markBorrowed(r.id);
+card.append(button);
+}
+
+if(r.status==="Borrowed"){
+const button=document.createElement("button");
+button.textContent="Mark as Returned";
+button.className="secondary";
+button.onclick=()=>markReturned(r.id);
+card.append(button);
+}
+
+box.append(card);
+});
+}
+
+function markBorrowed(id){
+const r=data.records.find(x=>x.id===id);
+if(!r||r.status!=="Approved")return;
+
+const item=data.equipment.find(x=>x.name.toLowerCase()===r.item.toLowerCase());
+
+if(!item||item.quantity<1){
+alert("No physical stock is available.");
+return;
+}
+
+if(!confirm("Confirm that the equipment custodian released this equipment?"))return;
+
+item.quantity--;
+r.status="Borrowed";
+r.borrowedAt=new Date().toISOString();
+
+if(!save()){
+item.quantity++;
+r.status="Approved";
+delete r.borrowedAt;
+return;
+}
+
+renderAdmin();
+populateEquipment();
+if(currentStudent)renderMyRecords();
+
+alert("Equipment marked as borrowed.");
+}
+
+function markReturned(id){
+const r=data.records.find(x=>x.id===id);
+if(!r||r.status!=="Borrowed")return;
+
+if(!confirm("Confirm that the equipment custodian received the returned equipment?"))return;
+
+const item=data.equipment.find(x=>x.name.toLowerCase()===r.item.toLowerCase());
+
+r.status="Returned";
+r.returnedAt=new Date().toISOString();
+if(item)item.quantity++;
+
+if(!save()){
+r.status="Borrowed";
+delete r.returnedAt;
+if(item)item.quantity--;
+return;
+}
+
+renderAdmin();
+populateEquipment();
+if(currentStudent)renderMyRecords();
+
+alert("Equipment successfully returned.");
+}
+
+function renderNotifications(){
+const box=el("notificationList");
+box.innerHTML="";
+
+const notices=[];
+const now=new Date();
+
+data.records.forEach(r=>{
+if(r.status==="Pending"){
+notices.push({type:"warning",text:"New request: "+r.student+" requested "+r.item+"."});
+}
+
+if(r.status==="Approved"){
+notices.push({type:"",text:"Awaiting pickup: "+r.student+" — "+r.item+"."});
+}
+
+if(r.status==="Borrowed"){
+const due=new Date(r.date+"T"+(r.time||"23:59"));
+
+if(due<now){
+notices.push({type:"danger",text:"OVERDUE: "+r.student+" must return "+r.item+". Due: "+r.date+" at "+r.time+"."});
+}else if(due-now<=48*60*60*1000){
+notices.push({type:"warning",text:"Due soon: "+r.student+" must return "+r.item+" on "+r.date+" at "+r.time+"."});
+}
+}
+});
+
+el("notificationCount").textContent=notices.length;
+
+if(!notices.length){
+box.textContent="No new notifications.";
+return;
+}
+
+notices.forEach(n=>{
+const div=document.createElement("div");
+div.className="notification "+n.type;
+div.textContent=n.text;
+box.append(div);
+});
+}
+
+function enableAdminNotifications(){
+if(!("Notification" in window)){
+alert("Browser notifications are not supported.");
+return;
+}
+
+Notification.requestPermission().then(permission=>{
+if(permission==="granted"){
+adminNotificationsEnabled=true;
+knownPendingIds=new Set(data.records.filter(r=>r.status==="Pending").map(r=>r.id));
+alert("Browser notifications enabled!");
+}else{
+alert("Please allow notifications in browser settings.");
+}
+});
+}
+
+function notifyNewPendingRequests(){
+if(!adminNotificationsEnabled||!("Notification" in window)||Notification.permission!=="granted")return;
+
+data.records.filter(r=>r.status==="Pending"&&!knownPendingIds.has(r.id)).forEach(r=>{
+new Notification("New MNHS Borrowing Request",{
+body:r.student+" requested "+r.item+". Return: "+r.date+" at "+r.time,
+tag:"mnhs-"+r.id
+});
+});
+
+knownPendingIds=new Set(data.records.filter(r=>r.status==="Pending").map(r=>r.id));
+}
+
+function deleteAllRecords(){
+if(!data.records.length){
+alert("There are no records to delete.");
+return;
+}
+
+if(!confirm("Delete ALL borrowing records? This cannot be undone."))return;
+
+const oldRecords=data.records;
+const oldQuantities=data.equipment.map(x=>({id:x.id,quantity:x.quantity}));
+
+data.records.filter(r=>r.status==="Borrowed").forEach(r=>{
+const item=data.equipment.find(x=>x.name.toLowerCase()===r.item.toLowerCase());
+if(item)item.quantity++;
+});
+
+data.records=[];
+
+if(!save()){
+data.records=oldRecords;
+oldQuantities.forEach(old=>{
+const item=data.equipment.find(x=>x.id===old.id);
+if(item)item.quantity=old.quantity;
+});
+return;
+}
+
+knownPendingIds.clear();
+renderAdmin();
+populateEquipment();
+if(currentStudent)renderMyRecords();
+
+alert("All borrowing records deleted. Inventory remains.");
+}
+
+function exportCSV(){
+const rows=[
+["Student","Section","Equipment","Purpose","Date Borrowed","Expected Return Date","Expected Return Time","Status"]
+];
+
+data.records.forEach(r=>{
+rows.push([
+r.student,r.section,r.item,r.purpose,
+r.borrowedAt?new Date(r.borrowedAt).toLocaleString():"",
+r.date,r.time,r.status
+]);
+});
+
+const csv=rows.map(row=>
+row.map(value=>'"'+String(value??"").replace(/"/g,'""')+'"').join(",")
+).join("\r\n");
+
+const blob=new Blob(["\uFEFF"+csv],{type:"text/csv;charset=utf-8;"});
+const url=URL.createObjectURL(blob);
+const link=document.createElement("a");
+
+link.href=url;
+link.download="MNHS_Borrowing_Records.csv";
+document.body.append(link);
+link.click();
+link.remove();
+
+setTimeout(()=>URL.revokeObjectURL(url),1000);
+}
+
+window.addEventListener("storage",event=>{
+if(event.key===KEY){
+data=loadData();
+
+if(!el("adminDashboard").classList.contains("hidden"))renderAdmin();
+if(currentStudent)renderMyRecords();
+
+populateEquipment();
+}
+});
+
+setInterval(()=>{
+if(!el("adminDashboard").classList.contains("hidden")){
+data=loadData();
+renderAdmin();
+populateEquipment();
+}
+},10000);
+
+document.addEventListener("DOMContentLoaded",()=>{
+showPage("home");
+populateEquipment();
+});
+</script>
+
+</body>
+</html>
